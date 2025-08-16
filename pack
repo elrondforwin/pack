@@ -11,8 +11,22 @@ check-aur-helper() {
   elif [ -f /bin/yay ]; then
     helper="yay"
   else
-    echo "No AUR helper was found. Install yay or paru first."
-    exit 1
+    # ask user if they want to install an AUR helper
+    read -p "No AUR helper was found, would you like to install yay? [y/N]: " choiceInstallYay
+    if [ -n "$choiceInstallYay" ] && [ ${choiceInstallYay,,} == y ]; then
+      echo "Installing yay..."
+      # install needed packages
+      sudo pacman -S --needed --noconfirm git base-devel
+      # clone the yay repository and swith to it
+      git clone https://aur.archlinux.org/yay.git && cd yay
+      # compile yay
+      makepkg -si --noconfirm
+      # remove the yay directory
+      cd .. && rm -rf yay
+    else
+      echo "Exiting pack..."
+      exit 1
+    fi
   fi
 }
 
