@@ -7,295 +7,296 @@ cache_file="$cache_dir/cache"
 fzf_menu="fzf --disabled --cycle --no-info --reverse --margin 1% --padding 5% --border=bold"
 
 check_aur_helper() {
-    if command -v paru >/dev/null 2>&1; then
-        helper="paru"
-    elif command -v yay >/dev/null 2>&1; then
-        helper="yay"
-    else
-        echo "Error: pack requires 'paru' or 'yay' for AUR operations."
-        echo "Please install one manually:"
-        echo "  yay:  git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si"
-        echo "  paru: git clone https://aur.archlinux.org/paru.git && cd paru && makepkg -si"
-        exit 1
-    fi
+  if command -v paru >/dev/null 2>&1; then
+    helper="paru"
+  elif command -v yay >/dev/null 2>&1; then
+    helper="yay"
+  else
+    echo "Error: pack requires 'paru' or 'yay' for AUR operations."
+    echo "Please install one manually:"
+    echo "  yay:  git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si"
+    echo "  paru: git clone https://aur.archlinux.org/paru.git && cd paru && makepkg -si"
+    exit 1
+  fi
 }
 
 check_aur_cache() {
-    # 5 days
-    local ttl=432000
+  # 5 days
+  local ttl=432000
 
-    if [ ! -f "$cache_file" ] || [ $(($(date +%s) - $(stat -c %Y "$cache_file" 2>/dev/null || echo 0))) -gt $ttl ]; then
-        create_aur_cache
-    fi
+  if [ ! -f "$cache_file" ] || [ $(($(date +%s) - $(stat -c %Y "$cache_file" 2>/dev/null || echo 0))) -gt $ttl ]; then
+    create_aur_cache
+  fi
 }
 
 create_aur_cache() {
-    echo "Creating cache..."
-    echo "TIP: If AUR is down, you can create cache without AUR packages from Advanced Options."
+  echo "Creating cache..."
+  echo "TIP: If AUR is down, you can create cache without AUR packages from Advanced Options."
 
-    if ! ${helper} -Slq > "$cache_file.tmp" 2>/dev/null; then
-        echo "Failed to fetch package list. Is AUR down?"
-        rm -f "$cache_file.tmp"
-        return 1
-    fi
+  if ! ${helper} -Slq >"$cache_file.tmp" 2>/dev/null; then
+    echo "Failed to fetch package list. Is AUR down?"
+    rm -f "$cache_file.tmp"
+    return 1
+  fi
 
-    mv "$cache_file.tmp" "$cache_file"
-    echo "Successfully created cache."
+  mv "$cache_file.tmp" "$cache_file"
+  echo "Successfully created cache."
 }
 
 create_pacman_cache() {
-    echo "This method is recommended only if AUR is not available."
-    echo "If AUR is available, use the other method to regenerate the cache."
+  echo "This method is recommended only if AUR is not available."
+  echo "If AUR is available, use the other method to regenerate the cache."
 
-    while true; do
-        read -p "Do you want to continue? (Y/n): " -r choice
-        choice=${choice,,}
+  while true; do
+    read -p "Do you want to continue? (Y/n): " -r choice
+    choice=${choice,,}
 
-        case "$choice" in
-            "" | y | yes)
-                break
-                ;;
-            n | no)
-                echo "Aborted. Going back."
-                cache_regen_selector
-                return
-                ;;
-            *)
-                echo "Please enter a valid input."
-                ;;
-        esac
-    done
+    case "$choice" in
+    "" | y | yes)
+      break
+      ;;
+    n | no)
+      echo "Aborted. Going back."
+      cache_regen_selector
+      return
+      ;;
+    *)
+      echo "Please enter a valid input."
+      ;;
+    esac
+  done
 
-    echo
-    if pacman -Slq > "$cache_file.tmp" 2>/dev/null; then
-        mv "$cache_file.tmp" "$cache_file"
-        echo "Successfully created cache from pacman."
-    else
-        echo "Failed to generate cache from pacman."
-        rm -f "$cache_file.tmp"
-    fi
+  echo
+  if pacman -Slq >"$cache_file.tmp" 2>/dev/null; then
+    mv "$cache_file.tmp" "$cache_file"
+    echo "Successfully created cache from pacman."
+  else
+    echo "Failed to generate cache from pacman."
+    rm -f "$cache_file.tmp"
+  fi
 }
 
 cache_regen_selector() {
-    choice=$(printf "Create Cache (Recommended)\nCreate Cache without AUR\nGo Back" | ${fzf_menu})
-    case $choice in
-        "Create Cache (Recommended)")
-            create_aur_cache
-            cache_regen_selector
-            ;;
-        "Create Cache without AUR")
-            create_pacman_cache
-            cache_regen_selector
-            ;;
-        "Go Back")
-            launch_adv_options
-            ;;
-        *)
-            launch_adv_options
-            ;;
-    esac
+  choice=$(gum choose "Create Cache (Recommended)" "Create Cache without AUR" "Go Back")
+  case $choice in
+  "Create Cache (Recommended)")
+    create_aur_cache
+    cache_regen_selector
+    ;;
+  "Create Cache without AUR")
+    create_pacman_cache
+    cache_regen_selector
+    ;;
+  "Go Back")
+    launch_adv_options
+    ;;
+  *)
+    launch_adv_options
+    ;;
+  esac
 }
 
 regen_pack_cache() {
-    cache_regen_selector
-    launch_adv_options
+  cache_regen_selector
+  launch_adv_options
 }
 
 pack_install() {
-    local fzf_args=(
-        --multi
-        --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Sii {1}"
-        --preview-window 'right:50%:wrap:border-bold'
-        --bind 'alt-p:toggle-preview'
-        --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
-        --bind 'alt-k:preview-up,alt-j:preview-down'
-        --padding 2%
-    )
+  local fzf_args=(
+    --multi
+    --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Sii {1}"
+    --preview-window 'right:50%:wrap:border-bold'
+    --bind 'alt-p:toggle-preview'
+    --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
+    --bind 'alt-k:preview-up,alt-j:preview-down'
+    --padding 2%
+  )
 
-    check_aur_cache
+  check_aur_cache
 
-    local pack_name=$(cat "${cache_file}" 2>/dev/null | fzf "${fzf_args[@]}" | tr '\n' ' ')
+  local pack_name=$(cat "${cache_file}" 2>/dev/null | fzf "${fzf_args[@]}" | tr '\n' ' ')
 
-    if [[ -n $pack_name ]]; then
-        ${helper} -S $pack_name
-    fi
+  if [[ -n $pack_name ]]; then
+    ${helper} -S $pack_name
+  fi
 }
 
 pack_uninstall() {
-    local fzf_args=(
-        --multi
-        --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Qi {1}"
-        --preview-window 'right:50%:wrap:border-bold'
-        --bind 'alt-p:toggle-preview'
-        --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
-        --bind 'alt-k:preview-up,alt-j:preview-down'
-        --padding 2%
-    )
+  local fzf_args=(
+    --multi
+    --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Qi {1}"
+    --preview-window 'right:50%:wrap:border-bold'
+    --bind 'alt-p:toggle-preview'
+    --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
+    --bind 'alt-k:preview-up,alt-j:preview-down'
+    --padding 2%
+  )
 
-    local pack_name=$(${helper} -Qq | fzf "${fzf_args[@]}" | tr '\n' ' ')
+  local pack_name=$(${helper} -Qq | fzf "${fzf_args[@]}" | tr '\n' ' ')
 
-    if [[ -n $pack_name ]]; then
-        ${helper} -Rns $pack_name
-    fi
+  if [[ -n $pack_name ]]; then
+    ${helper} -Rns $pack_name
+  fi
 }
 
 pack_update() {
-    echo -e "Updating system packages...\n"
-    ${helper} -Syu
-    echo
+  echo -e "Updating system packages...\n"
+  ${helper} -Syu
+  echo
 }
 
 pack_clear_helper_cache() {
-    ${helper} -Scc
-    echo
+  ${helper} -Scc
+  echo
 }
 
 pack_list_aur() {
-    local fzf_args=(
-        --multi
-        --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Qi {1}"
-        --preview-window 'right:50%:wrap:border-bold'
-        --bind 'alt-p:toggle-preview'
-        --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
-        --bind 'alt-k:preview-up,alt-j:preview-down'
-        --padding 2%
-    )
+  local fzf_args=(
+    --multi
+    --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Qi {1}"
+    --preview-window 'right:50%:wrap:border-bold'
+    --bind 'alt-p:toggle-preview'
+    --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
+    --bind 'alt-k:preview-up,alt-j:preview-down'
+    --padding 2%
+  )
 
-    local pack_name=$(${helper} -Qqm | fzf "${fzf_args[@]}" | tr '\n' ' ')
+  local pack_name=$(${helper} -Qqm | fzf "${fzf_args[@]}" | tr '\n' ' ')
 
-    if [[ -n $pack_name ]]; then
-        ${helper} -Rns $pack_name
-    fi
+  if [[ -n $pack_name ]]; then
+    ${helper} -Rns $pack_name
+  fi
 }
 
 pack_list_recent() {
-    local fzf_args=(
-        --multi
-        --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Qi {1}"
-        --preview-window 'right:50%:wrap:border-bold'
-        --bind 'alt-p:toggle-preview'
-        --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
-        --bind 'alt-k:preview-up,alt-j:preview-down'
-        --padding 2%
-    )
+  local fzf_args=(
+    --multi
+    --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Qi {1}"
+    --preview-window 'right:50%:wrap:border-bold'
+    --bind 'alt-p:toggle-preview'
+    --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
+    --bind 'alt-k:preview-up,alt-j:preview-down'
+    --padding 2%
+  )
 
-    if ! command -v expac >/dev/null 2>&1; then
-        echo "This feature requires 'expac'. Please install it first."
-        read -p "Press Enter to return..."
-        pack_list_installed
-        return
-    fi
+  if ! command -v expac >/dev/null 2>&1; then
+    echo "This feature requires 'expac'. Please install it first."
+    read -p "Press Enter to return..."
+    pack_list_installed
+    return
+  fi
 
-    local pack_name=$(expac --timefmt='%Y-%m-%d %T' '%l\t%n' 2>/dev/null | sort | tail -200 | awk '{print $NF}' | tac | fzf "${fzf_args[@]}" | tr '\n' ' ')
+  local pack_name=$(expac --timefmt='%Y-%m-%d %T' '%l\t%n' 2>/dev/null | sort | tail -200 | awk '{print $NF}' | tac | fzf "${fzf_args[@]}" | tr '\n' ' ')
 
-    if [[ -n $pack_name ]]; then
-        ${helper} -Rns $pack_name
-    fi
+  if [[ -n $pack_name ]]; then
+    ${helper} -Rns $pack_name
+  fi
 }
 
 pack_list_orphaned() {
-    local fzf_args=(
-        --multi
-        --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Qi {1}"
-        --preview-window 'right:50%:wrap:border-bold'
-        --bind 'alt-p:toggle-preview'
-        --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
-        --bind 'alt-k:preview-up,alt-j:preview-down'
-        --padding 2%
-    )
+  local fzf_args=(
+    --multi
+    --preview "echo 'alt-p: toggle description, alt-j/k: scroll, F11: maximize'; echo; ${helper} -Qi {1}"
+    --preview-window 'right:50%:wrap:border-bold'
+    --bind 'alt-p:toggle-preview'
+    --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
+    --bind 'alt-k:preview-up,alt-j:preview-down'
+    --padding 2%
+  )
 
-    local pack_name=$(${helper} -Qtdq | fzf "${fzf_args[@]}" | tr '\n' ' ')
+  local pack_name=$(${helper} -Qtdq | fzf "${fzf_args[@]}" | tr '\n' ' ')
 
-    if [[ -n $pack_name ]]; then
-        ${helper} -Rns $pack_name
-    fi
+  if [[ -n $pack_name ]]; then
+    ${helper} -Rns $pack_name
+  fi
 }
 
 pack_list_installed() {
-    local choice=$(printf "List All Installed Packages\nList Recent Installed Packages\nOnly List Installed AUR Packages\nOnly List Orphaned Packages\nGo Back" | fzf --disabled --cycle --no-info --reverse --margin 1% --padding 5% --border=bold)
-    case $choice in
-        "List All Installed Packages")
-            pack_uninstall
-            pack_list_installed
-            ;;
-        "List Recent Installed Packages")
-            pack_list_recent
-            pack_list_installed
-            ;;
-        "Only List Installed AUR Packages")
-            pack_list_aur
-            pack_list_installed
-            ;;
-        "Only List Orphaned Packages")
-            pack_list_orphaned
-            pack_list_installed
-            ;;
-        "Go Back")
-            pack_menu
-            ;;
-        *)
-            pack_menu
-            ;;
-    esac
+  local choice=$(gum choose "List All Installed Packages" "List Recent Installed Packages" "Only List Installed AUR Packages" "Only List Orphaned Packages" "Go Back")
+  case $choice in
+  "List All Installed Packages")
+    pack_uninstall
+    pack_list_installed
+    ;;
+  "List Recent Installed Packages")
+    pack_list_recent
+    pack_list_installed
+    ;;
+  "Only List Installed AUR Packages")
+    pack_list_aur
+    pack_list_installed
+    ;;
+  "Only List Orphaned Packages")
+    pack_list_orphaned
+    pack_list_installed
+    ;;
+  "Go Back")
+    pack_menu
+    ;;
+  *)
+    pack_menu
+    ;;
+  esac
 }
 
 pack_menu() {
-    local choice=$(printf "Install Packages\nRemove Packages\nUpdate System\nAdvanced Options\nExit" | ${fzf_menu})
-    case $choice in
-        "Install Packages")
-            pack_install
-            pack_menu
-            ;;
-        "Remove Packages")
-            pack_list_installed
-            pack_menu
-            ;;
-        "Update System")
-            pack_update
-            pack_menu
-            ;;
-        "Advanced Options")
-            launch_adv_options
-            pack_menu
-            ;;
-        "Exit")
-            exit 0
-            ;;
-        *)
-            exit 1
-            ;;
-    esac
+  local choice=$(gum choose "Install Packages" "Remove Packages" "Update System" "Advanced Options" "Exit")
+  case $choice in
+  "Install Packages")
+    pack_install
+    pack_menu
+    ;;
+  "Remove Packages")
+    pack_list_installed
+    pack_menu
+    ;;
+  "Update System")
+    pack_update
+    pack_menu
+    ;;
+  "Advanced Options")
+    launch_adv_options
+    pack_menu
+    ;;
+  "Exit")
+    exit 0
+    ;;
+  *)
+    exit 1
+    ;;
+  esac
 }
 
 launch_adv_options() {
-    local choice_adv=$(printf "Clear Helper Cache\nRegenerate Pack Cache\nGo Back" | ${fzf_menu})
-    case $choice_adv in
-        "Clear Helper Cache")
-            pack_clear_helper_cache
-            launch_adv_options
-            ;;
-        "Regenerate Pack Cache")
-            regen_pack_cache
-            ;;
-        "Go Back")
-            pack_menu
-            ;;
-    esac
+  local choice_adv=$(gum choose "Clear Helper Cache" "Regenerate Pack Cache" "Go Back")
+  case $choice_adv in
+  "Clear Helper Cache")
+    pack_clear_helper_cache
+    launch_adv_options
+    ;;
+  "Regenerate Pack Cache")
+    regen_pack_cache
+    ;;
+  "Go Back")
+    pack_menu
+    ;;
+  esac
 }
 
 check_aur_helper
 
 case $1 in
-    install)
-        pack_install
-        ;;
-    remove|uninstall)
-        pack_uninstall
-        ;;
-    update)
-        pack_update
-        ;;
-    *)
-        pack_menu
-        ;;
+install)
+  pack_install
+  ;;
+remove | uninstall)
+  pack_uninstall
+  ;;
+update)
+  pack_update
+  ;;
+*)
+  pack_menu
+  ;;
 esac
+
