@@ -33,7 +33,7 @@ create_aur_cache() {
   echo "Creating cache..."
   echo "TIP: If AUR is down, you can create cache without AUR packages from Advanced Options."
 
-  if ! ${helper} -Slq >"$cache_file.tmp" 2>/dev/null; then
+  if ! ${helper} -Sl | awk '{print $1"/"$2}' >"$cache_file.tmp" 2>/dev/null; then
     echo "Failed to fetch package list. Is AUR down?"
     rm -f "$cache_file.tmp"
     return 1
@@ -67,7 +67,7 @@ create_pacman_cache() {
   done
 
   echo
-  if pacman -Slq >"$cache_file.tmp" 2>/dev/null; then
+  if pacman -Sl | awk '{print $1"/"$2}' >"$cache_file.tmp" 2>/dev/null; then
     mv "$cache_file.tmp" "$cache_file"
     echo "Successfully created cache from pacman."
   else
@@ -299,4 +299,3 @@ update)
   pack_menu
   ;;
 esac
-
