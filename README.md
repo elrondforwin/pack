@@ -1,13 +1,13 @@
-# 🧰 Pack
-### 💻 Simple and clean TUI (Terminal User Interface) package manager for *Arch Linux*.  
+# Pack
+### Simple and clean TUI package manager for *Arch Linux*.  
 Supports **yay** and **paru**.
 
-🎥 **Example Usage:**  
-👉 [YouTube Video](https://youtu.be/JOJlOmrX_ko?si=fVAuSbHqdI0H9N0Z)
+**Example Usage:**  
+[YouTube Video](https://youtu.be/JOJlOmrX_ko?si=fVAuSbHqdI0H9N0Z)
 
 ---
 
-## ⚙️ Installation
+## Installation
 **Requires:** `git`  
 
 ```bash
@@ -18,7 +18,7 @@ makepkg -si
 
 ---
 
-## 🚀 Usage
+## Usage
 Simply run:
 
 ```bash
@@ -29,7 +29,7 @@ Or launch it from your application launcher.
 
 ---
 
-## 🧩 To-Do
+## To-Do
 | Status | Feature |
 |:------:|:--------|
 | ✅ | Add a `.desktop` file for easy launch |
@@ -39,5 +39,5 @@ Or launch it from your application launcher.
 
 ---
 
-## 💡 Credits
+## Credits
 Highly inspired by [Omarchy's package installer script](https://github.com/basecamp/omarchy/blob/master/bin/omarchy-pkg-install).
